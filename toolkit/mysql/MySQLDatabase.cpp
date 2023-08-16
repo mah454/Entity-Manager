@@ -3,9 +3,13 @@
 //
 
 #include <mutex>
-#include "MySqlDatabase.h"
+#include "MySQLDatabase.h"
 
-void MySqlDatabase::connect() {
+sql::Connection *Database::createConnection() {
+    return driver->connect(url, username, password);
+}
+
+void Database::connect() {
     driver = get_driver_instance();
     sql::Connection *connection;
     for (int i = 0; i < defaultPoolSize; i++) {
@@ -14,15 +18,15 @@ void MySqlDatabase::connect() {
     }
 }
 
-sql::ResultSet *MySqlDatabase::executeQuery(const std::string &query, sql::Statement &statement) {
+sql::ResultSet *Database::executeQuery(const std::string &query, sql::Statement &statement) {
     return statement.executeQuery(query);
 }
 
-void MySqlDatabase::execute(const std::string &query, sql::Statement &statement) {
+void Database::execute(const std::string &query, sql::Statement &statement) {
     statement.executeUpdate(query);
 }
 
-sql::Connection *MySqlDatabase::getConnection() {
+sql::Connection *Database::getConnection() {
     std::unique_lock<std::mutex> lock(mutex);
     while (connections.empty()) {}
 
@@ -37,12 +41,12 @@ sql::Connection *MySqlDatabase::getConnection() {
     return connection;
 }
 
-void MySqlDatabase::releaseConnection(sql::Connection *connection) {
+void Database::releaseConnection(sql::Connection *connection) {
     std::unique_lock<std::mutex> lock(mutex);
     connections.push(connection);
 }
 
-void MySqlDatabase::destroyPool() {
+void Database::destroyPool() {
     std::unique_lock<std::mutex> lock(mutex);
     while (!connections.empty()) {
         sql::Connection *connection = connections.front();
@@ -51,14 +55,10 @@ void MySqlDatabase::destroyPool() {
     }
 }
 
-void MySqlDatabase::txBegin(sql::Connection *connection) {
+void Database::txBegin(sql::Connection *connection) {
     if (!connection->getAutoCommit()) connection->setAutoCommit(false);
 }
 
-void MySqlDatabase::txCommit(sql::Connection *connection) {
+void Database::txCommit(sql::Connection *connection) {
     if (!connection->getAutoCommit()) connection->commit();
-}
-
-sql::Connection *MySqlDatabase::createConnection() {
-    return driver->connect(url, username, password);
 }
