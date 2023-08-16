@@ -6,16 +6,16 @@
 #define ENTITY_MANAGER_REPOSITORY_H
 
 #include <list>
+#include <map>
 
-template<typename ENTITY>
 class Repository {
-    void save(ENTITY *e);
+    void save(std::map<std::string, std::string>& map,const std::string& table);
 
-    void saveAll(std::list<ENTITY> *eList);
+    void saveAll(std::list<std::map<std::string, std::string>> *eList);
 
-    ENTITY findById(long id);
+    std::map<std::string, std::string> findById(long id);
 
-    std::list<ENTITY> findAll();
+    std::list<std::map<std::string, std::string>> findAll();
 
     bool existsById(long id);
 
@@ -23,11 +23,11 @@ class Repository {
 
     void removeById(long id);
 
-    void remove(ENTITY *e);
+    void remove(std::map<std::string, std::string>& e);
 
     void removeAll();
 
-    void removeAll(std::list<ENTITY> *eList);
+    void removeAll(std::list<std::map<std::string, std::string>>& eList);
 
     void removeAllById(std::list<long> *eList);
 };
