@@ -58,11 +58,6 @@ int main()
 //        stmt = con->createStatement();
 //        res = stmt->executeQuery("SELECT 'Hello World!' AS _message");
 
-        MySQLDatabase *mysql ;
-
-        con = mysql->getConnection();
-        mysql->executeQuery()
-
 
         while (res->next()) {
             cout << "\t... MySQL replies: ";
