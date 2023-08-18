@@ -4,6 +4,7 @@
 
 #include <string>
 #include "Repository.h"
+#include "Database.h"
 #include <fmt/format.h>
 
 void Repository::save(std::map<std::string, std::string>& map,const std::string& table) {
@@ -19,6 +20,7 @@ void Repository::save(std::map<std::string, std::string>& map,const std::string&
     values = values.substr(0,keys.length() - 1);
 
     std::string formattedQuery = fmt::format(query,table,keys,values);
+    Database::getInstance().execute(query);
 }
 
 void Repository::saveAll(std::list<std::map<std::string, std::string>> *eList) {

@@ -29,7 +29,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
   (and mysql_connection.h). This will reduce your build time!
 */
 #include "mysql_connection.h"
-#include "toolkit/mysql/MySQLDatabase.h"
 
 #include <cppconn/driver.h>
 #include <cppconn/exception.h>

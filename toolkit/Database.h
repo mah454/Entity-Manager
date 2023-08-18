@@ -6,56 +6,73 @@
 #define ENTITY_MANAGER_DATABASE_H
 
 #include <mutex>
+#include <cppconn/connection.h>
+#include <queue>
+#include <cppconn/resultset.h>
+#include "Configuration.h"
+#include <cppconn/driver.h>
 
 class Database {
 private:
-    virtual sql::Connection *createConnection() = 0;
-    virtual void connect() = 0;
+    Database() {
+        /* Set default pool size */
+        defaultPoolSize = 5;
 
+        Configuration *configuration;
+        url = configuration->getGetUrl();
+        username = configuration->getUsername();
+        password = configuration->getPassword();
+        int poolSize = configuration->getPoolSize();
+        /* Force set minimum pool size */
+        if (poolSize > defaultPoolSize) defaultPoolSize = poolSize;
+    }
 
-public:
     std::mutex mutex;
 
     /* Connection info */
-    sql::Driver *driver;
-    std::string &url;
-    std::string &username;
-    std::string &password;
+    sql::Driver *driver = get_driver_instance();
+    std::string url = "";
+    std::string username = "";
+    std::string password = "";
 
     /* Connection pool */
-    int defaultPoolSize = 5;
+    int defaultPoolSize = 6;
     std::queue<sql::Connection *> connections;
 
-    Database(std::string &url,
-             std::string &username,
-             std::string &password,
-             int poolSize) : url(url), username(username), password(password) {
-        /* Force set minimum pool size */
-        if (poolSize < defaultPoolSize) defaultPoolSize = poolSize;
+    sql::Connection *createConnection();
+
+    void connect();
+
+public:
+
+
+    static Database &getInstance() {
+        static Database instance;
+        return instance;
     }
 
     /*
      * Used for select queries
      * */
-    virtual sql::ResultSet *executeQuery(const std::string &query, sql::Statement &statement) = 0;
+    sql::ResultSet *executeQuery(const std::string &query);
 
     /*
      * Used for insert, delete, update, queries
      * */
-    virtual void execute(const std::string &query, sql::Statement &statement) = 0;
+    void execute(const std::string &query);
 
     /*
      * get a connection from pool
      * */
-    virtual sql::Connection *getConnection() = 0;
+    sql::Connection *getConnection();
 
-    virtual void releaseConnection(sql::Connection *connection) = 0;
+    void releaseConnection(sql::Connection *connection);
 
-    virtual void destroyPool() = 0;
+    void destroyPool();
 
-    virtual void txBegin(sql::Connection *connection) = 0;
+    static void txBegin(sql::Connection *connection);
 
-    virtual void txCommit(sql::Connection *connection) = 0;
+    static void txCommit(sql::Connection *connection);
 };
 
 #endif //ENTITY_MANAGER_DATABASE_H
