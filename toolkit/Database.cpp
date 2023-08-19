@@ -13,7 +13,6 @@ sql::Connection *Database::createConnection() {
 void Database::initPool() {
     sql::Connection *connection;
     for (int i = 0; i < defaultPoolSize; i++) {
-        std::cout << "add new connection pool " + std::to_string(i + 1) << std::endl;
         connection = createConnection();
         connections.push(connection);
     }

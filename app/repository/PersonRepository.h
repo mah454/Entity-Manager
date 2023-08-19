@@ -9,7 +9,8 @@
 #include "../../toolkit/Repository.h"
 
 class PersonRepository: public Repository {
-
+public:
+    explicit PersonRepository(const std::string &tableName);
 };
 
 

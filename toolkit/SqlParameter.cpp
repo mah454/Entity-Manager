@@ -19,7 +19,6 @@ enum DataType {
     NULL_VALUE
 };
 
-
 struct SqlParameter {
     std::string key ;
     std::string value ;

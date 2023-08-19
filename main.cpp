@@ -1,13 +1,15 @@
 #include "app/repository/PersonRepository.h"
 
 int main() {
+        std::vector<SqlParameter> parameters;
+        parameters.push_back({"id", "4", INT});
+        parameters.push_back({"name", "aaa", STRING});
 
-    std::vector<SqlParameter> parameters;
-    parameters.push_back({"id", "1", INT});
-    parameters.push_back({"name", "ali", STRING});
+        PersonRepository personRepository("person");
+        personRepository.save(parameters);
 
-    PersonRepository *personRepository;
-    personRepository->save(parameters, "person");
+    SqlParameter whereClause = {"id","2",INT};
+    personRepository.merge(parameters,whereClause);
 
     return 0;
 }

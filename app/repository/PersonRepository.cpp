@@ -3,3 +3,7 @@
 //
 
 #include "PersonRepository.h"
+
+PersonRepository::PersonRepository(const std::string &tableName) : Repository(tableName) {
+
+}

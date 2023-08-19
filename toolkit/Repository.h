@@ -14,10 +14,15 @@
 
 class Repository {
     std::string tableName;
+private:
+    static void parsePreparedStatement(const std::vector<SqlParameter> &params, sql::PreparedStatement *preparedStatement) ;
 public:
-    void save(std::vector<SqlParameter> &params,const std::string& table);
+    explicit Repository(std::string tableName);
 
-    void saveAll(std::list<std::map<std::string, std::string>> *eList);
+    void save(std::vector<SqlParameter> &params);
+    void merge(std::vector<SqlParameter> &params,SqlParameter &clause);
+
+    void saveAll(std::vector<std::vector<SqlParameter>> &eList);
 
     std::map<std::string, std::string> findById(long id);
 
