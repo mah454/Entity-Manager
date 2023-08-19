@@ -38,7 +38,7 @@ void Repository::save(std::vector<SqlParameter> &params) {
     instance.releaseConnection(connection);
 }
 
-void Repository::merge(std::vector<SqlParameter> &params,SqlParameter &whereClause) {
+void Repository::merge(std::vector<SqlParameter> &params, SqlParameter &whereClause) {
     Database &instance = Database::getInstance();
     sql::Connection *connection = instance.getConnection();
 
@@ -46,10 +46,10 @@ void Repository::merge(std::vector<SqlParameter> &params,SqlParameter &whereClau
     std::string query = "update {} set {} where {}";
     std::string sets;
     for (const auto &item: params) {
-        sets += item.key + "=?," ;
+        sets += item.key + "=?,";
     }
 
-    std::string clause_statement ;
+    std::string clause_statement;
     DataType wct = whereClause.type;
     std::string wck = whereClause.key;
     std::string wcv = whereClause.value;
@@ -69,7 +69,8 @@ void Repository::merge(std::vector<SqlParameter> &params,SqlParameter &whereClau
         }
         default: {
             std::cout << "Unknown data type for where clause" << std::endl;
-            std::cout << "Current support data types: [STRING,INT,INT64,UNSIGNED_INT,UNSIGNED_INT64,DOUBLE,BIG_INT]" << std::endl;
+            std::cout << "Current support data types: [STRING,INT,INT64,UNSIGNED_INT,UNSIGNED_INT64,DOUBLE,BIG_INT]"
+                      << std::endl;
             EXIT_FAILURE;
         }
     }
@@ -102,11 +103,19 @@ std::map<std::string, std::string> Repository::findById(long id) {
     sql::Connection *connection = instance.getConnection();
     std::string query = "select * from {} where id={}";
     std::string formattedQuery = fmt::format(query, tableName, id);
+    std::cout << formattedQuery << std::endl;
     sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
     sql::ResultSet *rs = preparedStatement->executeQuery();
-    while (rs->next()) {
+    sql::ResultSetMetaData *metaData = rs->getMetaData();
+    int columnCount = metaData->getColumnCount();
 
+    while (rs->next()) {
+        for (int i = 0; i < columnCount; ++i) {
+            std::string columnName = metaData->getColumnLabel(i);
+            std::string columnTypeName = metaData->getColumnTypeName(i);
+        }
     }
+
     return {};
 }
 
