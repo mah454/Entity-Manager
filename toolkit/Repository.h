@@ -10,8 +10,10 @@
 #include <iostream>
 #include <vector>
 #include "SqlParameter.cpp"
+#include "Database.h"
 
 class Repository {
+    std::string tableName;
 public:
     void save(std::vector<SqlParameter> &params,const std::string& table);
 
