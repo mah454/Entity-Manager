@@ -4,18 +4,18 @@
 
 #include "Configuration.h"
 
-const std::string &Configuration::getGetUrl() const {
-    return getUrl;
+std::string Configuration::getGetUrl() const {
+    return "tcp://127.0.0.1:3306/sample";
 }
 
-const std::string &Configuration::getUsername() const {
-    return username;
+std::string Configuration::getUsername() const {
+    return "root";
 }
 
-const std::string &Configuration::getPassword() const {
-    return password;
+std::string Configuration::getPassword() const {
+    return "rootpass";
 }
 
-const int &Configuration::getPoolSize() const {
-    return poolSize;
+int Configuration::getPoolSize() const {
+    return 10;
 }

@@ -10,9 +10,10 @@ sql::Connection *Database::createConnection() {
     return driver->connect(url, username, password);
 }
 
-void Database::connect() {
+void Database::initPool() {
     sql::Connection *connection;
     for (int i = 0; i < defaultPoolSize; i++) {
+        std::cout << "add new connection pool " + std::to_string(i + 1) << std::endl;
         connection = createConnection();
         connections.push(connection);
     }
@@ -25,14 +26,19 @@ sql::ResultSet *Database::executeQuery(const std::string &query) {
 }
 
 void Database::execute(const std::string &query) {
+    std::cout << "Query: " + query << std::endl;
     sql::Connection *connection = getConnection();
+
     sql::Statement *statement = connection->createStatement();
+
     statement->executeUpdate(query);
+    statement->close();
+    delete statement;
+    releaseConnection(connection);
 }
 
 sql::Connection *Database::getConnection() {
     std::unique_lock<std::mutex> lock(mutex);
-    while (connections.empty()) {}
 
     sql::Connection *connection = connections.front();
     connections.pop();

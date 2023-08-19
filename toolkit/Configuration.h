@@ -15,13 +15,13 @@ private:
     std::string password ;
     int poolSize ;
 public:
-    const std::string &getGetUrl() const;
+    std::string getGetUrl() const;
 
-    const std::string &getUsername() const;
+    std::string getUsername() const;
 
-    const std::string &getPassword() const;
+    std::string getPassword() const;
 
-    const int &getPoolSize() const;
+    int getPoolSize() const;
 
 };
 

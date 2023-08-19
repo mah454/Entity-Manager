@@ -15,37 +15,33 @@
 class Database {
 private:
     Database() {
-        /* Set default pool size */
-        defaultPoolSize = 5;
-
-        Configuration *configuration;
-        url = configuration->getGetUrl();
-        username = configuration->getUsername();
-        password = configuration->getPassword();
-        int poolSize = configuration->getPoolSize();
+        Configuration configuration;
+        url = configuration.getGetUrl();
+        username = configuration.getUsername();
+        password = configuration.getPassword();
+        int poolSize = configuration.getPoolSize();
         /* Force set minimum pool size */
         if (poolSize > defaultPoolSize) defaultPoolSize = poolSize;
+        initPool();
     }
 
     std::mutex mutex;
 
     /* Connection info */
     sql::Driver *driver = get_driver_instance();
-    std::string url = "";
-    std::string username = "";
-    std::string password = "";
+    std::string url;
+    std::string username;
+    std::string password;
 
     /* Connection pool */
-    int defaultPoolSize = 6;
+    int defaultPoolSize = 5;
     std::queue<sql::Connection *> connections;
 
     sql::Connection *createConnection();
 
-    void connect();
+    void initPool();
 
 public:
-
-
     static Database &getInstance() {
         static Database instance;
         return instance;

@@ -7,9 +7,13 @@
 
 #include <list>
 #include <map>
+#include <iostream>
+#include <vector>
+#include "SqlParameter.cpp"
 
 class Repository {
-    void save(std::map<std::string, std::string>& map,const std::string& table);
+public:
+    void save(std::vector<SqlParameter> &params,const std::string& table);
 
     void saveAll(std::list<std::map<std::string, std::string>> *eList);
 

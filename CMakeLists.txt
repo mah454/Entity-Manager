@@ -4,13 +4,12 @@ project(entity-manager)
 
 add_executable(entity-manager
         main.cpp
-        app/Person.cpp
-        app/Person.h
-        toolkit/Database.h
+        app/model/Person.cpp
+        toolkit/Configuration.cpp
         toolkit/Database.cpp
         toolkit/Repository.cpp
-        toolkit/Repository.h)
+        app/repository/PersonRepository.cpp toolkit/SqlParameter.cpp)
 
-target_link_libraries(entity-manager mysqlcppconn)
+target_link_libraries(entity-manager PRIVATE fmt mysqlcppconn)
 
 install(TARGETS entity-manager RUNTIME DESTINATION bin)
