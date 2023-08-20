@@ -9,22 +9,22 @@
 #include <map>
 #include <iostream>
 #include <vector>
-#include "SqlParameter.cpp"
+#include "SqlColumn.cpp"
 #include "Database.h"
 
 class Repository {
     std::string tableName;
 private:
-    static void parsePreparedStatement(const std::vector<SqlParameter> &params, sql::PreparedStatement *preparedStatement) ;
+    static void parsePreparedStatement(const std::vector<SqlColumn> &params, sql::PreparedStatement *preparedStatement) ;
 public:
     explicit Repository(std::string tableName);
 
-    void save(std::vector<SqlParameter> &params);
-    void merge(std::vector<SqlParameter> &params,SqlParameter &clause);
+    void save(std::vector<SqlColumn> &params);
+    void merge(std::vector<SqlColumn> &params,SqlColumn &clause);
 
-    void saveAll(std::vector<std::vector<SqlParameter>> &eList);
+    void saveAll(std::vector<std::vector<SqlColumn>> &eList);
 
-    std::map<std::string, std::string> findById(long id);
+    std::vector<SqlColumn> findById(long id);
 
     std::list<std::map<std::string, std::string>> findAll();
 

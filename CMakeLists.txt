@@ -8,7 +8,7 @@ add_executable(entity-manager
         toolkit/Configuration.cpp
         toolkit/Database.cpp
         toolkit/Repository.cpp
-        app/repository/PersonRepository.cpp toolkit/SqlParameter.cpp)
+        app/repository/PersonRepository.cpp toolkit/SqlColumn.cpp)
 
 target_link_libraries(entity-manager PRIVATE fmt mysqlcppconn)
 
