@@ -15,18 +15,22 @@
 class Repository {
     std::string tableName;
 private:
-    static void parsePreparedStatement(const std::vector<SqlColumn> &params, sql::PreparedStatement *preparedStatement) ;
+    void parsePreparedStatement(const std::vector<SqlColumn> &params, sql::PreparedStatement *preparedStatement);
+
+    void mapToSqlColumn(sql::ResultSet *rs, std::vector<SqlColumn> &result) const;
+
 public:
     explicit Repository(std::string tableName);
 
     void save(std::vector<SqlColumn> &params);
-    void merge(std::vector<SqlColumn> &params,SqlColumn &clause);
+
+    void merge(std::vector<SqlColumn> &params, SqlColumn &clause);
 
     void saveAll(std::vector<std::vector<SqlColumn>> &eList);
 
     std::vector<SqlColumn> findById(long id);
 
-    std::list<std::map<std::string, std::string>> findAll();
+    std::vector<std::vector<SqlColumn>> findAll();
 
     bool existsById(long id);
 
@@ -34,13 +38,9 @@ public:
 
     void removeById(long id);
 
-    void remove(std::map<std::string, std::string>& e);
-
     void removeAll();
 
-    void removeAll(std::list<std::map<std::string, std::string>>& eList);
-
-    void removeAllById(std::list<long> *eList);
+    void removeAllById(std::list<long> &eList);
 };
 
 #endif //ENTITY_MANAGER_REPOSITORY_H

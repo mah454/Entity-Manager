@@ -13,8 +13,6 @@
 void Repository::save(std::vector<SqlColumn> &params) {
     Database &instance = Database::getInstance();
     sql::Connection *connection = instance.getConnection();
-
-    std::cout << "Try to insert new row" << std::endl;
     std::string query = "insert into {} ({}) values ({})";
     std::string keys;
     std::string values;
@@ -26,8 +24,6 @@ void Repository::save(std::vector<SqlColumn> &params) {
     keys = keys.substr(0, keys.length() - 1);
     values = values.substr(0, values.length() - 1);
     std::string formattedQuery = fmt::format(query, tableName, keys, values);
-
-    std::cout << "Formatted Query: " + formattedQuery << std::endl;
     sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
 
     parsePreparedStatement(params, preparedStatement);
@@ -42,7 +38,6 @@ void Repository::merge(std::vector<SqlColumn> &params, SqlColumn &whereClause) {
     Database &instance = Database::getInstance();
     sql::Connection *connection = instance.getConnection();
 
-    std::cout << "Try to insert new row" << std::endl;
     std::string query = "update {} set {} where {}";
     std::string sets;
     for (const auto &item: params) {
@@ -54,32 +49,25 @@ void Repository::merge(std::vector<SqlColumn> &params, SqlColumn &whereClause) {
     std::string wck = whereClause.key;
     std::string wcv = whereClause.value;
     switch (wct) {
-        case sql::DataType::DECIMAL:
-        case sql::DataType::NUMERIC:
-        case sql::DataType::CHAR:
-        case sql::DataType::VARCHAR:
-        case sql::DataType::VARBINARY:
-        case sql::DataType::GEOMETRY:
-        case sql::DataType::JSON:
-        case sql::DataType::DATE:
-        case sql::DataType::TIME:
-        case sql::DataType::TIMESTAMP:
-        case sql::DataType::ENUM: {
+        case DataType::TIMESTAMP:
+        case DataType::DATE:
+        case DataType::TIME:
+        case DataType::STRING:
+        case DataType::CHAR: {
             clause_statement = wck + "='" + wcv + "'";
             break;
         }
-        case sql::DataType::BIT:
-        case sql::DataType::SMALLINT:
-        case sql::DataType::TINYINT:
-        case sql::DataType::MEDIUMINT:
-        case sql::DataType::YEAR:
-        case sql::DataType::INTEGER: {
+        case DataType::TINY_INT:
+        case DataType::INT:
+        case DataType::BIG_INT:
+        case DataType::DOUBLE:
+        case DataType::DECIMAL: {
             clause_statement = wck + "=" + wcv + "";
             break;
         }
         default: {
             std::cout << "Unknown data type for where clause" << std::endl;
-            std::cout << "Current support data types: [STRING,INT,INT64,UNSIGNED_INT,UNSIGNED_INT64,DOUBLE,BIG_INT]"
+            std::cout << "Current support data types: [STRING,CHAR,TINY_INT,INT,BIG_INT,DOUBLE,BOOLEAN,DECIMAL]"
                       << std::endl;
             EXIT_FAILURE;
         }
@@ -87,12 +75,8 @@ void Repository::merge(std::vector<SqlColumn> &params, SqlColumn &whereClause) {
 
     sets = sets.substr(0, sets.length() - 1);
     std::string formattedQuery = fmt::format(query, tableName, sets, clause_statement);
-
-    std::cout << "Formatted Query: " + formattedQuery << std::endl;
     sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
-
     parsePreparedStatement(params, preparedStatement);
-
     preparedStatement->executeUpdate();
     preparedStatement->close();
     delete preparedStatement;
@@ -111,140 +95,78 @@ void Repository::saveAll(std::vector<std::vector<SqlColumn>> &eList) {
 std::vector<SqlColumn> Repository::findById(long id) {
     Database &instance = Database::getInstance();
     sql::Connection *connection = instance.getConnection();
-    std::string query = "select * from {} where id={}";
-    std::string formattedQuery = fmt::format(query, tableName, id);
-    std::cout << "Query : " + formattedQuery << std::endl;
+    std::string query = "SELECT * FROM {} WHERE id=?";
+    std::string formattedQuery = fmt::format(query, tableName);
     sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
+    preparedStatement->setBigInt(1, std::to_string(id));
     sql::ResultSet *rs = preparedStatement->executeQuery();
-    sql::ResultSetMetaData *metaData = rs->getMetaData();
-
     std::vector<SqlColumn> result;
-    int i = 1;
-    while (rs->next()) {
-        std::string columnName = metaData->getColumnLabel(i);
-        std::string columnTypeName = metaData->getColumnTypeName(i);
-
-        SqlColumn column = {columnName, ""};
-
-        if (std::equal(columnTypeName.begin(), columnTypeName.end(), "BIT")) {
-            column.type = sql::DataType::BIT;
-            column.value = std::to_string(rs->getInt(i));
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "TINYINT")) {
-            column.type = sql::DataType::TINYINT;
-            column.value = std::to_string(rs->getInt(i));
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "SMALLINT")) {
-            column.type = sql::DataType::SMALLINT;
-            column.value = std::to_string(rs->getInt(i));
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "MEDIUMINT")) {
-            column.type = sql::DataType::MEDIUMINT;
-            column.value = std::to_string(rs->getInt(i));
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "INTEGER")) {
-            column.type = sql::DataType::INTEGER;
-            column.value = std::to_string(rs->getInt(i));
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "BIGINT")) {
-            column.type = sql::DataType::BIGINT;
-            column.value = std::to_string(rs->getInt64(i));
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "REAL")) {
-            column.type = sql::DataType::REAL;
-            column.value = std::to_string(rs->getDouble(i));
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "DOUBLE")) {
-            column.type = sql::DataType::DOUBLE;
-            column.value = std::to_string(rs->getDouble(i));
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "DECIMAL")) {
-            column.type = sql::DataType::DECIMAL;
-            column.value = rs->getString(i);
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "NUMERIC")) {
-            column.type = sql::DataType::NUMERIC;
-            column.value = rs->getString(i);
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "CHAR")) {
-            column.type = sql::DataType::CHAR;
-            column.value = rs->getString(i);
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "BINARY")) {
-            column.type = sql::DataType::BINARY;
-            std::istream *is = rs->getBlob(i);
-            std::stringstream buffer;
-            buffer << is->rdbuf();
-            std::string binaryData = buffer.str();
-            column.value = binaryData;
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "VARCHAR")) {
-            column.type = sql::DataType::VARCHAR;
-            column.value = rs->getString(i);
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "VARBINARY")) {
-            column.type = sql::DataType::VARBINARY;
-            column.value = rs->getString(i);
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "LONGVARCHAR")) {
-            column.type = sql::DataType::LONGVARCHAR;
-            column.value = rs->getString(i);
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "LONGVARBINARY")) {
-            column.type = sql::DataType::LONGVARBINARY;
-            column.value = rs->getString(i);
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "TIMESTAMP")) {
-            column.type = sql::DataType::TIMESTAMP;
-            column.value = rs->getString(i);
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "DATE")) {
-            column.type = sql::DataType::DATE;
-            column.value = rs->getString(i);
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "TIME")) {
-            column.type = sql::DataType::TIME;
-            column.value = rs->getString(i);
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "YEAR")) {
-            column.type = sql::DataType::YEAR;
-            column.value = rs->getString(i);
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "GEOMETRY")) {
-            column.type = sql::DataType::GEOMETRY;
-            column.value = rs->getString(i);
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "ENUM")) {
-            column.type = sql::DataType::ENUM;
-            column.value = rs->getString(i);
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "SET")) {
-            column.type = sql::DataType::SET;
-            column.value = rs->getString(i);
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "SQLNULL")) {
-            column.type = sql::DataType::SQLNULL;
-            column.value = "";
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "JSON")) {
-            column.type = sql::DataType::JSON;
-            column.value = rs->getString(i);
-        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "UNKNOWN")) {
-            column.type = sql::DataType::UNKNOWN;
-            column.value = "";
-        }
-        result.push_back(column);
-        i++;
-    }
-
+    while (rs->next()) mapToSqlColumn(rs, result);
     return result;
 }
 
-std::list<std::map<std::string, std::string>> Repository::findAll() {
-    return {};
+std::vector<std::vector<SqlColumn>> Repository::findAll() {
+    Database &instance = Database::getInstance();
+    sql::Connection *connection = instance.getConnection();
+    std::string query = "SELECT * FROM {}";
+    std::string formattedQuery = fmt::format(query, tableName);
+    sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
+    sql::ResultSet *rs = preparedStatement->executeQuery();
+
+    std::vector<std::vector<SqlColumn>> result;
+    while (rs -> next()) {
+        std::vector<SqlColumn> row;
+        mapToSqlColumn(rs, row);
+        result.push_back(row);
+    }
+    return result;
 }
 
 bool Repository::existsById(long id) {
-    return false;
+    Database &instance = Database::getInstance();
+    sql::Connection *connection = instance.getConnection();
+    std::string query = "SELECT * FROM {} WHERE id=?";
+    std::string formattedQuery = fmt::format(query, tableName);
+    sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
+    preparedStatement->setBigInt(1, std::to_string(id));
+    sql::ResultSet *rs = preparedStatement->executeQuery();
+    std::vector<SqlColumn> result;
+    return rs->next();
 }
 
 void Repository::removeById(long id) {
-
-}
-
-void Repository::remove(std::map<std::string, std::string> &e) {
-
+    Database &instance = Database::getInstance();
+    sql::Connection *connection = instance.getConnection();
+    std::string query = "DELETE FROM {} WHERE id=?";
+    std::string formattedQuery = fmt::format(query, tableName);
+    sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
+    preparedStatement->setBigInt(1, std::to_string(id));
+    preparedStatement->executeUpdate();
 }
 
 void Repository::removeAll() {
-
+    Database &instance = Database::getInstance();
+    sql::Connection *connection = instance.getConnection();
+    std::string query = "truncate {}";
+    std::string formattedQuery = fmt::format(query, tableName);
+    sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
+    preparedStatement->executeUpdate();
 }
 
-void Repository::removeAll(std::list<std::map<std::string, std::string>> &eList) {
-
-}
-
-void Repository::removeAllById(std::list<long> *eList) {
-
+void Repository::removeAllById(std::list<long> &eList) {
+    for (const auto &item : eList) {
+        removeById(item);
+    }
 }
 
 long Repository::count() {
+    Database &instance = Database::getInstance();
+    sql::Connection *connection = instance.getConnection();
+    std::string query = "select count(*) from {}";
+    std::string formattedQuery = fmt::format(query, tableName);
+    sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
+    sql::ResultSet *rs = preparedStatement->executeQuery();
+    if (rs->next()) return rs->getInt64(1);
     return 0;
 }
 
@@ -252,49 +174,106 @@ Repository::Repository(std::string tableName) : tableName(std::move(tableName)) 
 
 }
 
+
+/* Private Methods */
+
 void Repository::parsePreparedStatement(const std::vector<SqlColumn> &params, sql::PreparedStatement *preparedStatement) {
     for (int i = 0; i < params.size(); ++i) {
-        int type = params[i].type;
+        DataType type = params[i].type;
         std::string value = params[i].value;
 
         switch (type) {
-            case sql::DataType::BIT:
-            case sql::DataType::SMALLINT:
-            case sql::DataType::TINYINT:
-            case sql::DataType::MEDIUMINT:
-            case sql::DataType::YEAR:
-            case sql::DataType::INTEGER: {
-                preparedStatement->setInt(i + 1, static_cast<int32_t>(std::stoul(value)));
+            case DataType::TINY_INT:
+                preparedStatement->setUInt(i + 1, static_cast<uint32_t>(std::stoul(value)));
+                break;
+            case DataType::INT: {
+                preparedStatement->setUInt64(i + 1, static_cast<uint64_t>(std::stoul(value)));
                 break;
             }
-            case sql::DataType::REAL:
-            case sql::DataType::DOUBLE:
-                preparedStatement->setDouble(i + 1, static_cast<double >(std::stoul(value)));
-                break;
-            case sql::DataType::BIGINT:
+            case DataType::BIG_INT:
                 preparedStatement->setBigInt(i + 1, value);
                 break;
-            case sql::DataType::DECIMAL:
-            case sql::DataType::NUMERIC:
-            case sql::DataType::CHAR:
-            case sql::DataType::VARCHAR:
-            case sql::DataType::VARBINARY:
-            case sql::DataType::GEOMETRY:
-            case sql::DataType::JSON:
-            case sql::DataType::DATE:
-            case sql::DataType::TIME:
-            case sql::DataType::TIMESTAMP:
-            case sql::DataType::ENUM:
+            case DataType::DOUBLE:
+                preparedStatement->setDouble(i + 1, std::stod(value));
+                break;
+            case DataType::CHAR:
+            case DataType::DECIMAL:
+            case DataType::STRING:
+            case DataType::CLOB:
                 preparedStatement->setString(i + 1, value);
                 break;
-            case sql::DataType::LONGVARCHAR:
-            case sql::DataType::LONGVARBINARY: {
+            case BLOB: {
                 std::istringstream is(value);
                 preparedStatement->setBlob(i + 1, &is);
                 break;
             }
-            default:
-                std::cout << "Unknown data type" << std::endl;
+            case DataType::TIMESTAMP:
+            case DataType::DATE:
+            case DataType::TIME:
+                preparedStatement->setDateTime(i + 1, value);
+                break;
+            case DataType::NILL:
+                preparedStatement->setNull(i + 1, sql::DataType::SQLNULL);
+                break;
         }
+    }
+}
+
+void Repository::mapToSqlColumn(sql::ResultSet *rs, std::vector<SqlColumn> &result) const {
+    sql::ResultSetMetaData *metaData = rs->getMetaData();
+    unsigned int column_count = metaData->getColumnCount();
+    for (int i = 1; i < column_count + 1; ++i) {
+        std::string columnName = metaData->getColumnLabel(i);
+        std::string columnTypeName = metaData->getColumnTypeName(i);
+
+        SqlColumn column = {columnName, ""};
+        if (columnTypeName == "TINYINT") {
+            column.type = TINY_INT;
+            column.value = std::to_string(rs->getInt(i));
+        } else if (columnTypeName == "INT") {
+            column.type = INT;
+            column.value = std::to_string(rs->getInt(i));
+        } else if (columnTypeName == "BIGINT") {
+            column.type = BIG_INT;
+            column.value = std::to_string(rs->getInt64(i));
+        } else if (columnTypeName == "DOUBLE") {
+            column.type = DOUBLE;
+            column.value = std::to_string(rs->getDouble(i));
+        } else if (columnTypeName == "DECIMAL") {
+            column.type = DECIMAL;
+            column.value = rs->getString(i);
+        } else if (columnTypeName == "CHAR") {
+            column.type = CHAR;
+            column.value = rs->getString(i);
+        } else if (columnTypeName == "BINARY") {
+            column.type = BLOB;
+            std::istream *is = rs->getBlob(i);
+            std::stringstream buffer;
+            buffer << is->rdbuf();
+            std::string binaryData = buffer.str();
+            column.value = binaryData;
+        } else if (columnTypeName == "VARCHAR") {
+            column.type = STRING;
+            column.value = rs->getString(i);
+        } else if (columnTypeName == "LONGVARCHAR") {
+            column.type = CLOB;
+            column.value = rs->getString(i);
+        } else if (columnTypeName == "LONGVARBINARY") {
+            column.type = BLOB;
+            column.value = rs->getString(i);
+        } else if (columnTypeName == "TIMESTAMP") {
+            column.type = TIMESTAMP;
+            column.value = rs->getString(i);
+        } else if (columnTypeName == "DATETIME") {
+            column.type = DATE;
+            column.value = rs->getString(i);
+        } else if (columnTypeName == "TIME") {
+            column.type = TIME;
+            column.value = rs->getString(i);
+        } else if (std::equal(columnTypeName.begin(), columnTypeName.end(), "SQLNULL")) {
+            column.type = NILL;
+            column.value = "";
+        }
+        result.push_back(column);
     }
 }

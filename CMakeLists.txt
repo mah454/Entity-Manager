@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 
 project(entity-manager)
-
+SET(CMAKE_BUILD_TYPE Debug)
 add_executable(entity-manager
         main.cpp
         app/model/Person.cpp
