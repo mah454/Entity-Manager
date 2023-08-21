@@ -24,13 +24,14 @@ public:
 
     void save(std::vector<SqlColumn> &params);
 
-    void merge(std::vector<SqlColumn> &params, SqlColumn &clause);
+    void merge(std::vector<SqlColumn> &params, std::string &whereClause);
 
     void saveAll(std::vector<std::vector<SqlColumn>> &eList);
 
     std::vector<SqlColumn> findById(long id);
 
     std::vector<std::vector<SqlColumn>> findAll();
+    std::vector<std::vector<SqlColumn>> find(std::string &whereClause);
 
     bool existsById(long id);
 

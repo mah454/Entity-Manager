@@ -34,7 +34,7 @@ void Repository::save(std::vector<SqlColumn> &params) {
     instance.releaseConnection(connection);
 }
 
-void Repository::merge(std::vector<SqlColumn> &params, SqlColumn &whereClause) {
+void Repository::merge(std::vector<SqlColumn> &params, std::string &whereClause) {
     Database &instance = Database::getInstance();
     sql::Connection *connection = instance.getConnection();
 
@@ -44,37 +44,8 @@ void Repository::merge(std::vector<SqlColumn> &params, SqlColumn &whereClause) {
         sets += item.key + "=?,";
     }
 
-    std::string clause_statement;
-    int wct = whereClause.type;
-    std::string wck = whereClause.key;
-    std::string wcv = whereClause.value;
-    switch (wct) {
-        case DataType::TIMESTAMP:
-        case DataType::DATE:
-        case DataType::TIME:
-        case DataType::STRING:
-        case DataType::CHAR: {
-            clause_statement = wck + "='" + wcv + "'";
-            break;
-        }
-        case DataType::TINY_INT:
-        case DataType::INT:
-        case DataType::BIG_INT:
-        case DataType::DOUBLE:
-        case DataType::DECIMAL: {
-            clause_statement = wck + "=" + wcv + "";
-            break;
-        }
-        default: {
-            std::cout << "Unknown data type for where clause" << std::endl;
-            std::cout << "Current support data types: [STRING,CHAR,TINY_INT,INT,BIG_INT,DOUBLE,BOOLEAN,DECIMAL]"
-                      << std::endl;
-            EXIT_FAILURE;
-        }
-    }
-
     sets = sets.substr(0, sets.length() - 1);
-    std::string formattedQuery = fmt::format(query, tableName, sets, clause_statement);
+    std::string formattedQuery = fmt::format(query, tableName, sets, whereClause);
     sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
     parsePreparedStatement(params, preparedStatement);
     preparedStatement->executeUpdate();
@@ -105,6 +76,24 @@ std::vector<SqlColumn> Repository::findById(long id) {
     return result;
 }
 
+
+std::vector<std::vector<SqlColumn>> Repository::find(std::string &whereClause) {
+    Database &instance = Database::getInstance();
+    sql::Connection *connection = instance.getConnection();
+    std::string query = "SELECT * FROM {} where {}";
+    std::string formattedQuery = fmt::format(query, tableName, whereClause);
+    sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
+    sql::ResultSet *rs = preparedStatement->executeQuery();
+
+    std::vector<std::vector<SqlColumn>> result;
+    while (rs->next()) {
+        std::vector<SqlColumn> row;
+        mapToSqlColumn(rs, row);
+        result.push_back(row);
+    }
+    return result;
+}
+
 std::vector<std::vector<SqlColumn>> Repository::findAll() {
     Database &instance = Database::getInstance();
     sql::Connection *connection = instance.getConnection();
@@ -114,7 +103,7 @@ std::vector<std::vector<SqlColumn>> Repository::findAll() {
     sql::ResultSet *rs = preparedStatement->executeQuery();
 
     std::vector<std::vector<SqlColumn>> result;
-    while (rs -> next()) {
+    while (rs->next()) {
         std::vector<SqlColumn> row;
         mapToSqlColumn(rs, row);
         result.push_back(row);
@@ -154,7 +143,7 @@ void Repository::removeAll() {
 }
 
 void Repository::removeAllById(std::list<long> &eList) {
-    for (const auto &item : eList) {
+    for (const auto &item: eList) {
         removeById(item);
     }
 }
