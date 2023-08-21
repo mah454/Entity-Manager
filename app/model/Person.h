@@ -11,8 +11,8 @@
 class Person {
 private:
     int id;
-    int age ;
-    std::string name ;
+    int age;
+    std::string name;
 public:
     int getId() const;
 

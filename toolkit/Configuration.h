@@ -10,9 +10,9 @@
 
 class Configuration {
 private:
-    std::string connection_url = getenv("MYSQL_CONNECTION_URL") ;
-    std::string username = getenv("MYSQL_USERNAME");
-    std::string password = getenv("MYSQL_PASSWORD");
+    std::string conn_url = getenv("MYSQL_CONNECTION_URL") ;
+    std::string username = getenv("MYSQL_CONNECTION_USERNAME");
+    std::string password = getenv("MYSQL_CONNECTION_PASSWORD");
     std::string poolSize = getenv("MYSQL_CONNECTION_POOL_SIZE");
 public:
     std::string getConnectionUrl() const;

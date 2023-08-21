@@ -5,7 +5,7 @@
 #include "Configuration.h"
 
 std::string Configuration::getConnectionUrl() const {
-    return connection_url;
+    return conn_url;
 }
 
 std::string Configuration::getUsername() const {
@@ -20,8 +20,8 @@ int Configuration::getPoolSize() const {
     return std::stoi(poolSize);
 }
 
-void Configuration::setConnectionUrl(const std::string &url) {
-    Configuration::connection_url = connection_url;
+void Configuration::setConnectionUrl(const std::string &conn_url) {
+    Configuration::conn_url = conn_url;
 }
 
 void Configuration::setUsername(const std::string &username) {
