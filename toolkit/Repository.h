@@ -31,6 +31,7 @@ public:
     std::vector<SqlColumn> findById(long id);
 
     std::vector<std::vector<SqlColumn>> findAll();
+
     std::vector<std::vector<SqlColumn>> find(std::string &whereClause);
 
     bool existsById(long id);
