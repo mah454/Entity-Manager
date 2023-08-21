@@ -21,7 +21,7 @@ enum DataType {
     NILL, // 12
 };
 
-struct SqlColumn {
+struct SqlCell {
     std::string key;
     std::string value;
     DataType type;

@@ -8,11 +8,8 @@
 #include <fmt/format.h>
 #include <cppconn/prepared_statement.h>
 #include <sstream>
-#include <utility>
 
-void Repository::save(std::vector<SqlColumn> &params) {
-    Database &instance = Database::getInstance();
-    sql::Connection *connection = instance.getConnection();
+void Repository::save(std::vector<SqlCell> &params, sql::Connection *connection) {
     std::string query = "insert into {} ({}) values ({})";
     std::string keys;
     std::string values;
@@ -25,19 +22,11 @@ void Repository::save(std::vector<SqlColumn> &params) {
     values = values.substr(0, values.length() - 1);
     std::string formattedQuery = fmt::format(query, tableName, keys, values);
     sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
-
     parsePreparedStatement(params, preparedStatement);
-
-    preparedStatement->executeUpdate();
-    preparedStatement->close();
-    delete preparedStatement;
-    instance.releaseConnection(connection);
+    Database::getInstance().execute(preparedStatement);
 }
 
-void Repository::merge(std::vector<SqlColumn> &params, std::string &whereClause) {
-    Database &instance = Database::getInstance();
-    sql::Connection *connection = instance.getConnection();
-
+void Repository::merge(std::vector<SqlCell> &params, std::string &whereClause,sql::Connection *connection) {
     std::string query = "update {} set {} where {}";
     std::string sets;
     for (const auto &item: params) {
@@ -48,22 +37,20 @@ void Repository::merge(std::vector<SqlColumn> &params, std::string &whereClause)
     std::string formattedQuery = fmt::format(query, tableName, sets, whereClause);
     sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
     parsePreparedStatement(params, preparedStatement);
-    preparedStatement->executeUpdate();
-    preparedStatement->close();
-    delete preparedStatement;
+    Database::getInstance().execute(preparedStatement);
 }
 
-void Repository::saveAll(std::vector<std::vector<SqlColumn>> &eList) {
+void Repository::saveAll(std::vector<std::vector<SqlCell>> &eList) {
     Database &instance = Database::getInstance();
     sql::Connection *connection = instance.getConnection();
     Database::txBegin(connection);
-    for (std::vector<SqlColumn> &item: eList) {
+    for (std::vector<SqlCell> &item: eList) {
         save(item);
     }
     Database::txCommit(connection);
 }
 
-std::vector<SqlColumn> Repository::findById(long id) {
+std::vector<SqlCell> Repository::findById(long id) {
     Database &instance = Database::getInstance();
     sql::Connection *connection = instance.getConnection();
     std::string query = "SELECT * FROM {} WHERE id=?";
@@ -71,13 +58,13 @@ std::vector<SqlColumn> Repository::findById(long id) {
     sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
     preparedStatement->setBigInt(1, std::to_string(id));
     sql::ResultSet *rs = preparedStatement->executeQuery();
-    std::vector<SqlColumn> result;
+    std::vector<SqlCell> result;
     while (rs->next()) mapToSqlColumn(rs, result);
     return result;
 }
 
 
-std::vector<std::vector<SqlColumn>> Repository::find(std::string &whereClause) {
+std::vector<std::vector<SqlCell>> Repository::find(std::string &whereClause) {
     Database &instance = Database::getInstance();
     sql::Connection *connection = instance.getConnection();
     std::string query = "SELECT * FROM {} where {}";
@@ -85,16 +72,16 @@ std::vector<std::vector<SqlColumn>> Repository::find(std::string &whereClause) {
     sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
     sql::ResultSet *rs = preparedStatement->executeQuery();
 
-    std::vector<std::vector<SqlColumn>> result;
+    std::vector<std::vector<SqlCell>> result;
     while (rs->next()) {
-        std::vector<SqlColumn> row;
+        std::vector<SqlCell> row;
         mapToSqlColumn(rs, row);
         result.push_back(row);
     }
     return result;
 }
 
-std::vector<std::vector<SqlColumn>> Repository::findAll() {
+std::vector<std::vector<SqlCell>> Repository::findAll() {
     Database &instance = Database::getInstance();
     sql::Connection *connection = instance.getConnection();
     std::string query = "SELECT * FROM {}";
@@ -102,9 +89,9 @@ std::vector<std::vector<SqlColumn>> Repository::findAll() {
     sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
     sql::ResultSet *rs = preparedStatement->executeQuery();
 
-    std::vector<std::vector<SqlColumn>> result;
+    std::vector<std::vector<SqlCell>> result;
     while (rs->next()) {
-        std::vector<SqlColumn> row;
+        std::vector<SqlCell> row;
         mapToSqlColumn(rs, row);
         result.push_back(row);
     }
@@ -119,7 +106,7 @@ bool Repository::existsById(long id) {
     sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
     preparedStatement->setBigInt(1, std::to_string(id));
     sql::ResultSet *rs = preparedStatement->executeQuery();
-    std::vector<SqlColumn> result;
+    std::vector<SqlCell> result;
     return rs->next();
 }
 
@@ -142,7 +129,7 @@ void Repository::removeAll() {
     preparedStatement->executeUpdate();
 }
 
-void Repository::removeAllById(std::list<long> &eList) {
+void Repository::removeAllById(std::vector<long> &eList) {
     for (const auto &item: eList) {
         removeById(item);
     }
@@ -166,7 +153,7 @@ Repository::Repository(std::string tableName) : tableName(std::move(tableName)) 
 
 /* Private Methods */
 
-void Repository::parsePreparedStatement(const std::vector<SqlColumn> &params, sql::PreparedStatement *preparedStatement) {
+void Repository::parsePreparedStatement(const std::vector<SqlCell> &params, sql::PreparedStatement *preparedStatement) {
     for (int i = 0; i < params.size(); ++i) {
         DataType type = params[i].type;
         std::string value = params[i].value;
@@ -208,14 +195,14 @@ void Repository::parsePreparedStatement(const std::vector<SqlColumn> &params, sq
     }
 }
 
-void Repository::mapToSqlColumn(sql::ResultSet *rs, std::vector<SqlColumn> &result) const {
+void Repository::mapToSqlColumn(sql::ResultSet *rs, std::vector<SqlCell> &result) {
     sql::ResultSetMetaData *metaData = rs->getMetaData();
     unsigned int column_count = metaData->getColumnCount();
     for (int i = 1; i < column_count + 1; ++i) {
         std::string columnName = metaData->getColumnLabel(i);
         std::string columnTypeName = metaData->getColumnTypeName(i);
 
-        SqlColumn column = {columnName, ""};
+        SqlCell column = {columnName, ""};
         if (columnTypeName == "TINYINT") {
             column.type = TINY_INT;
             column.value = std::to_string(rs->getInt(i));

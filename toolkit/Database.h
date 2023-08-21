@@ -14,16 +14,8 @@
 
 class Database {
 private:
-    Database() {
-        Configuration configuration;
-        url = configuration.getGetUrl();
-        username = configuration.getUsername();
-        password = configuration.getPassword();
-        int poolSize = configuration.getPoolSize();
-        /* Force set minimum pool size */
-        if (poolSize > defaultPoolSize) defaultPoolSize = poolSize;
-        initPool();
-    }
+    Database();
+    Database(Configuration &configuration);
 
     std::mutex mutex;
 
@@ -48,14 +40,9 @@ public:
     }
 
     /*
-     * Used for select queries
-     * */
-    sql::ResultSet *executeQuery(const std::string &query);
-
-    /*
      * Used for insert, delete, update, queries
      * */
-    void execute(const std::string &query);
+    void execute(sql::PreparedStatement *preparedStatement);
 
     /*
      * get a connection from pool

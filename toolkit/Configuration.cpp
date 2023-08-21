@@ -4,18 +4,34 @@
 
 #include "Configuration.h"
 
-std::string Configuration::getGetUrl() const {
-    return "tcp://127.0.0.1:3306/sample";
+std::string Configuration::getConnectionUrl() const {
+    return connection_url;
 }
 
 std::string Configuration::getUsername() const {
-    return "root";
+    return username;
 }
 
 std::string Configuration::getPassword() const {
-    return "rootpass";
+    return password;
 }
 
 int Configuration::getPoolSize() const {
-    return 10;
+    return std::stoi(poolSize);
+}
+
+void Configuration::setConnectionUrl(const std::string &url) {
+    Configuration::connection_url = connection_url;
+}
+
+void Configuration::setUsername(const std::string &username) {
+    Configuration::username = username;
+}
+
+void Configuration::setPassword(const std::string &password) {
+    Configuration::password = password;
+}
+
+void Configuration::setPoolSize(int poolSize) {
+    Configuration::poolSize = poolSize;
 }

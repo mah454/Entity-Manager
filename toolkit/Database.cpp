@@ -4,6 +4,7 @@
 
 #include <cppconn/statement.h>
 #include <cppconn/driver.h>
+#include <cppconn/prepared_statement.h>
 #include "Database.h"
 
 sql::Connection *Database::createConnection() {
@@ -18,22 +19,10 @@ void Database::initPool() {
     }
 }
 
-sql::ResultSet *Database::executeQuery(const std::string &query) {
-    sql::Connection *connection = getConnection();
-    sql::Statement *statement = connection->createStatement();
-    return statement->executeQuery(query);
-}
-
-void Database::execute(const std::string &query) {
-    std::cout << "Query: " + query << std::endl;
-    sql::Connection *connection = getConnection();
-
-    sql::Statement *statement = connection->createStatement();
-
-    statement->executeUpdate(query);
-    statement->close();
-    delete statement;
-    releaseConnection(connection);
+void Database::execute(sql::PreparedStatement *preparedStatement) {
+    preparedStatement->executeUpdate();
+    preparedStatement->close();
+    delete preparedStatement;
 }
 
 sql::Connection *Database::getConnection() {
@@ -65,10 +54,31 @@ void Database::destroyPool() {
 }
 
 void Database::txBegin(sql::Connection *connection) {
-    if (!connection->getAutoCommit()) connection->setAutoCommit(false);
+    if (connection->getAutoCommit()) connection->setAutoCommit(false);
 }
 
 void Database::txCommit(sql::Connection *connection) {
     if (!connection->getAutoCommit()) connection->commit();
+}
+
+Database::Database() {
+    Configuration configuration;
+    url = configuration.getConnectionUrl();
+    username = configuration.getUsername();
+    password = configuration.getPassword();
+    int poolSize = configuration.getPoolSize();
+    /* Force set minimum pool size */
+    if (poolSize > defaultPoolSize) defaultPoolSize = poolSize;
+    initPool();
+}
+
+Database::Database(Configuration &configuration) {
+    url = configuration.getConnectionUrl();
+    username = configuration.getUsername();
+    password = configuration.getPassword();
+    int poolSize = configuration.getPoolSize();
+    /* Force set minimum pool size */
+    if (poolSize > defaultPoolSize) defaultPoolSize = poolSize;
+    initPool();
 }
 

@@ -5,34 +5,33 @@
 #ifndef ENTITY_MANAGER_REPOSITORY_H
 #define ENTITY_MANAGER_REPOSITORY_H
 
-#include <list>
 #include <map>
 #include <iostream>
 #include <vector>
-#include "SqlColumn.cpp"
+#include "SQL.cpp"
 #include "Database.h"
 
 class Repository {
     std::string tableName;
 private:
-    void parsePreparedStatement(const std::vector<SqlColumn> &params, sql::PreparedStatement *preparedStatement);
+    static void parsePreparedStatement(const std::vector<SqlCell> &params, sql::PreparedStatement *preparedStatement);
 
-    void mapToSqlColumn(sql::ResultSet *rs, std::vector<SqlColumn> &result) const;
+    static void mapToSqlColumn(sql::ResultSet *rs, std::vector<SqlCell> &result);
 
 public:
     explicit Repository(std::string tableName);
 
-    void save(std::vector<SqlColumn> &params);
+    void save(std::vector<SqlCell> &params, sql::Connection *connection = Database::getInstance().getConnection());
 
-    void merge(std::vector<SqlColumn> &params, std::string &whereClause);
+    void merge(std::vector<SqlCell> &params, std::string &whereClause, sql::Connection *connection = Database::getInstance().getConnection());
 
-    void saveAll(std::vector<std::vector<SqlColumn>> &eList);
+    void saveAll(std::vector<std::vector<SqlCell>> &eList);
 
-    std::vector<SqlColumn> findById(long id);
+    std::vector<SqlCell> findById(long id);
 
-    std::vector<std::vector<SqlColumn>> findAll();
+    std::vector<std::vector<SqlCell>> findAll();
 
-    std::vector<std::vector<SqlColumn>> find(std::string &whereClause);
+    std::vector<std::vector<SqlCell>> find(std::string &whereClause);
 
     bool existsById(long id);
 
@@ -42,7 +41,7 @@ public:
 
     void removeAll();
 
-    void removeAllById(std::list<long> &eList);
+    void removeAllById(std::vector<long> &eList);
 };
 
 #endif //ENTITY_MANAGER_REPOSITORY_H
