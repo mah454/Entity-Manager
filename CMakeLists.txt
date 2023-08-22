@@ -2,14 +2,18 @@ cmake_minimum_required(VERSION 3.0)
 
 project(entity-manager)
 SET(CMAKE_BUILD_TYPE Debug)
-add_executable(entity-manager
-        main.cpp
-        app/model/Person.cpp
+add_library(entity-manager
         toolkit/Configuration.cpp
         toolkit/Database.cpp
         toolkit/Repository.cpp
-        app/repository/PersonRepository.cpp toolkit/SQL.cpp)
+        toolkit/SQL.cpp)
+
+add_executable(test
+        test/main.cpp
+        test/repository/PersonRepository.cpp
+        test/model/Person.cpp)
 
 target_link_libraries(entity-manager PRIVATE fmt mysqlcppconn)
+target_link_libraries(test entity-manager)
 
 install(TARGETS entity-manager RUNTIME DESTINATION bin)

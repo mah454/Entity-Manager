@@ -1,8 +1,6 @@
-#include "app/repository/PersonRepository.h"
-#include <iostream>
-#include <string>
-#include <mysql_driver.h>
-#include <mysql_connection.h>
+
+#include <vector>
+#include "repository/PersonRepository.h"
 
 int main() {
     std::vector<SqlCell> parameters;
@@ -11,9 +9,9 @@ int main() {
 
     PersonRepository personRepository("person");
     sql::Connection *conn = Database::getInstance().getConnection();
-    Database::txBegin(conn);
-    personRepository.save(parameters,conn);
-    Database::txCommit(conn);
+//    Database::txBegin(conn);
+//    personRepository.save(parameters,conn);
+//    Database::txCommit(conn);
 
 //    SqlCell whereClause = {"id", "2", INT};
 //    personRepository.merge(parameters, whereClause);
