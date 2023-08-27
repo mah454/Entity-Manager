@@ -11,7 +11,7 @@
 #include <syslog.h>
 
 int Repository::save(std::vector<SqlCell> &params, sql::Connection *connection) {
-    int status ;
+    int status;
     try {
         std::string query = "insert into {} ({}) values ({})";
         std::string keys;
@@ -29,6 +29,7 @@ int Repository::save(std::vector<SqlCell> &params, sql::Connection *connection) 
         preparedStatement->executeUpdate();
         preparedStatement->close();
         delete (preparedStatement);
+        Database::getInstance().releaseConnection(connection);
         return 0;
     } catch (std::exception &e) {
         syslog(LOG_WARNING, "%s", e.what());
@@ -126,6 +127,7 @@ std::vector<std::vector<SqlCell>> Repository::findAll() {
     }
     delete (preparedStatement);
     delete (rs);
+    Database::getInstance().releaseConnection(connection);
     return result;
 }
 
@@ -143,13 +145,12 @@ bool Repository::existsById(long id) {
     Database::getInstance().releaseConnection(connection);
     bool exists = rs->next();
     delete (rs);
+    Database::getInstance().releaseConnection(connection);
     return exists;
 }
 
-int Repository::removeById(long id) {
+int Repository::removeById(long id, sql::Connection *connection) {
     try {
-        Database &instance = Database::getInstance();
-        sql::Connection *connection = instance.getConnection();
         std::string query = "DELETE FROM {} WHERE id=?";
         std::string formattedQuery = fmt::format(query, tableName);
         sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
@@ -181,10 +182,10 @@ int Repository::removeAll() {
     return 1;
 }
 
-int Repository::removeAllById(std::vector<long> &eList) {
+int Repository::removeAllById(std::vector<long> &eList, sql::Connection *connection) {
     int status;
     for (const auto &item: eList) {
-        status = removeById(item);
+        status = removeById(item, connection);
     }
     return status;
 }

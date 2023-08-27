@@ -6,7 +6,7 @@
 
 int main(int argc, char **argv) {
 
-//    openlog("entity-manager", LOG_PID, LOG_LOCAL0);
+    openlog("entity-manager", LOG_PID, LOG_LOCAL0);
 
     ::testing::InitGoogleTest(&argc, argv);
 

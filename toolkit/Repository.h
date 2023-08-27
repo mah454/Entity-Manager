@@ -37,11 +37,11 @@ public:
 
     long count();
 
-    int removeById(long id);
+    int removeById(long id,sql::Connection *connection = Database::getInstance().getConnection());
 
     int removeAll();
 
-    int removeAllById(std::vector<long> &eList);
+    int removeAllById(std::vector<long> &eList,sql::Connection *connection = Database::getInstance().getConnection());
 };
 
 #endif //ENTITY_MANAGER_REPOSITORY_H

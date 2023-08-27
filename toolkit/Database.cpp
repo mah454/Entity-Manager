@@ -14,7 +14,7 @@ Database &Database::getInstance() {
 }
 
 Database::Database() {
-    std::cout << "Create instance " << std::endl;
+    syslog(LOG_INFO,"Database instance generated");
 }
 
 void Database::setConfiguration(Configuration &configuration) {

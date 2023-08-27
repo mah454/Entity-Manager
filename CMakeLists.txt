@@ -12,7 +12,8 @@ add_executable(test
         test/main.cpp
         test/repository/PersonRepository.cpp
         test/model/Person.cpp
-        test/EnittyManagerTest.cpp)
+        test/TestCases.cpp
+        )
 
 target_link_libraries(entity-manager PRIVATE fmt mysqlcppconn)
 target_link_libraries(test PRIVATE entity-manager gtest)
