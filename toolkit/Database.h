@@ -14,9 +14,6 @@
 
 class Database {
 private:
-    Database();
-    Database(Configuration &configuration);
-
     std::mutex mutex;
 
     /* Connection info */
@@ -29,20 +26,17 @@ private:
     int defaultPoolSize = 5;
     std::queue<sql::Connection *> connections;
 
+    /* Constructor */
+    Database();
+
+    /* Private methods */
     sql::Connection *createConnection();
 
-    void initPool();
-
 public:
-    static Database &getInstance() {
-        static Database instance;
-        return instance;
-    }
+    static Database &getInstance() ;
 
-    /*
-     * Used for insert, delete, update, queries
-     * */
-    void execute(sql::PreparedStatement *preparedStatement);
+    void setConfiguration(Configuration &configuration) ;
+    void initPool();
 
     /*
      * get a connection from pool

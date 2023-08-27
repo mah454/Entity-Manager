@@ -21,11 +21,11 @@ private:
 public:
     explicit Repository(std::string tableName);
 
-    void save(std::vector<SqlCell> &params, sql::Connection *connection = Database::getInstance().getConnection());
+    int save(std::vector<SqlCell> &params, sql::Connection *connection = Database::getInstance().getConnection());
 
-    void merge(std::vector<SqlCell> &params, std::string &whereClause, sql::Connection *connection = Database::getInstance().getConnection());
+    int merge(std::vector<SqlCell> &params, std::string &whereClause, sql::Connection *connection = Database::getInstance().getConnection());
 
-    void saveAll(std::vector<std::vector<SqlCell>> &eList);
+    int saveAll(std::vector<std::vector<SqlCell>> &eList);
 
     std::vector<SqlCell> findById(long id);
 
@@ -37,11 +37,11 @@ public:
 
     long count();
 
-    void removeById(long id);
+    int removeById(long id);
 
-    void removeAll();
+    int removeAll();
 
-    void removeAllById(std::vector<long> &eList);
+    int removeAllById(std::vector<long> &eList);
 };
 
 #endif //ENTITY_MANAGER_REPOSITORY_H

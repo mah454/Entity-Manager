@@ -6,23 +6,43 @@
 #include <cppconn/driver.h>
 #include <cppconn/prepared_statement.h>
 #include "Database.h"
+#include <syslog.h>
+
+Database &Database::getInstance() {
+    static Database instance;
+    return instance;
+}
+
+Database::Database() {
+}
+
+void Database::setConfiguration(Configuration &configuration) {
+    url = configuration.getConnectionUrl();
+    username = configuration.getUsername();
+    password = configuration.getPassword();
+
+    /* Force set minimum pool size */
+    if (configuration.getPoolSize() > defaultPoolSize) defaultPoolSize = configuration.getPoolSize();
+
+    syslog(LOG_INFO, "Database Configuration url:[%s] username:[%s] password:[%s] pool_size:[%d]", url.c_str(), username.c_str(), password.c_str(), defaultPoolSize);
+}
 
 sql::Connection *Database::createConnection() {
+    syslog(LOG_INFO, "Try connect to database with url:[%s] username:[%s] password:[%s]", url.c_str(), username.c_str(), password.c_str());
     return driver->connect(url, username, password);
 }
 
 void Database::initPool() {
-    sql::Connection *connection;
-    for (int i = 0; i < defaultPoolSize; i++) {
-        connection = createConnection();
-        connections.push(connection);
+    try {
+        sql::Connection *connection;
+        for (int i = 0; i < defaultPoolSize; i++) {
+            connection = createConnection();
+            connections.push(connection);
+        }
+    } catch (std::exception &e) {
+        syslog(LOG_ERR, "Failed connect to database");
+        exit(1);
     }
-}
-
-void Database::execute(sql::PreparedStatement *preparedStatement) {
-    preparedStatement->executeUpdate();
-    preparedStatement->close();
-    delete preparedStatement;
 }
 
 sql::Connection *Database::getConnection() {
@@ -60,25 +80,3 @@ void Database::txBegin(sql::Connection *connection) {
 void Database::txCommit(sql::Connection *connection) {
     if (!connection->getAutoCommit()) connection->commit();
 }
-
-Database::Database() {
-    Configuration configuration;
-    url = configuration.getConnectionUrl();
-    username = configuration.getUsername();
-    password = configuration.getPassword();
-    int poolSize = configuration.getPoolSize();
-    /* Force set minimum pool size */
-    if (poolSize > defaultPoolSize) defaultPoolSize = poolSize;
-    initPool();
-}
-
-Database::Database(Configuration &configuration) {
-    url = configuration.getConnectionUrl();
-    username = configuration.getUsername();
-    password = configuration.getPassword();
-    int poolSize = configuration.getPoolSize();
-    /* Force set minimum pool size */
-    if (poolSize > defaultPoolSize) defaultPoolSize = poolSize;
-    initPool();
-}
-

@@ -1,17 +1,36 @@
 
 #include <vector>
 #include "repository/PersonRepository.h"
+#include <syslog.h>
 
 int main() {
+
+    openlog("entity-manager",LOG_PID,LOG_LOCAL0);
+
+    std::cout << getenv("MYSQL_CONNECTION_URL") << std::endl;
+
+    auto *configuration = new Configuration();
+    configuration->setConnectionUrl("tcp://172.17.0.2:3306/sample");
+    configuration->setUsername("root");
+    configuration->setPassword("rootpass");
+    configuration->setPoolSize(5);
+
+    Database::getInstance().setConfiguration(*configuration);
+    Database::getInstance().initPool();
+
+    sql::Connection *conn = Database::getInstance().getConnection();
+
     std::vector<SqlCell> parameters;
     parameters.push_back({"name", "z2", DataType::STRING});
-    parameters.push_back({"dtm", "2021-12-10 10:22:12.965", DataType::TIMESTAMP});
+    parameters.push_back({"fami22ly", "aaaa", DataType::STRING});
 
     PersonRepository personRepository("person");
-    sql::Connection *conn = Database::getInstance().getConnection();
-//    Database::txBegin(conn);
-//    personRepository.save(parameters,conn);
-//    Database::txCommit(conn);
+
+
+    Database::txBegin(conn);
+    int status = personRepository.save(parameters, conn);
+    Database::txCommit(conn);
+
 
 //    SqlCell whereClause = {"id", "2", INT};
 //    personRepository.merge(parameters, whereClause);

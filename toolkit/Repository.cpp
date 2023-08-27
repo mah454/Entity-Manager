@@ -8,46 +8,69 @@
 #include <fmt/format.h>
 #include <cppconn/prepared_statement.h>
 #include <sstream>
+#include <syslog.h>
 
-void Repository::save(std::vector<SqlCell> &params, sql::Connection *connection) {
-    std::string query = "insert into {} ({}) values ({})";
-    std::string keys;
-    std::string values;
-    for (const auto &item: params) {
-        keys += item.key + ",";
-        values += "?,";
+int Repository::save(std::vector<SqlCell> &params, sql::Connection *connection) {
+    int status ;
+    try {
+        std::string query = "insert into {} ({}) values ({})";
+        std::string keys;
+        std::string values;
+        for (const auto &item: params) {
+            keys += item.key + ",";
+            values += "?,";
+        }
+
+        keys = keys.substr(0, keys.length() - 1);
+        values = values.substr(0, values.length() - 1);
+        std::string formattedQuery = fmt::format(query, tableName, keys, values);
+        sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
+        parsePreparedStatement(params, preparedStatement);
+        status = preparedStatement->executeUpdate();
+        preparedStatement->close();
+        delete (preparedStatement);
+        Database::getInstance().releaseConnection(connection);
+        return status;
+    } catch (std::exception &e) {
+        syslog(LOG_WARNING, "%s", e.what());
     }
-
-    keys = keys.substr(0, keys.length() - 1);
-    values = values.substr(0, values.length() - 1);
-    std::string formattedQuery = fmt::format(query, tableName, keys, values);
-    sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
-    parsePreparedStatement(params, preparedStatement);
-    Database::getInstance().execute(preparedStatement);
+    return 2;
 }
 
-void Repository::merge(std::vector<SqlCell> &params, std::string &whereClause,sql::Connection *connection) {
-    std::string query = "update {} set {} where {}";
-    std::string sets;
-    for (const auto &item: params) {
-        sets += item.key + "=?,";
-    }
+int Repository::merge(std::vector<SqlCell> &params, std::string &whereClause, sql::Connection *connection) {
+    try {
+        std::string query = "update {} set {} where {}";
+        std::string sets;
+        for (const auto &item: params) {
+            sets += item.key + "=?,";
+        }
 
-    sets = sets.substr(0, sets.length() - 1);
-    std::string formattedQuery = fmt::format(query, tableName, sets, whereClause);
-    sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
-    parsePreparedStatement(params, preparedStatement);
-    Database::getInstance().execute(preparedStatement);
+        sets = sets.substr(0, sets.length() - 1);
+        std::string formattedQuery = fmt::format(query, tableName, sets, whereClause);
+        sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
+        parsePreparedStatement(params, preparedStatement);
+        int status = preparedStatement->executeUpdate();
+        preparedStatement->close();
+        delete (preparedStatement);
+        Database::getInstance().releaseConnection(connection);
+        return status;
+    } catch (std::exception &e) {
+        syslog(LOG_WARNING, "%s", e.what());
+    }
+    return 2;
 }
 
-void Repository::saveAll(std::vector<std::vector<SqlCell>> &eList) {
+int Repository::saveAll(std::vector<std::vector<SqlCell>> &eList) {
+    int status;
     Database &instance = Database::getInstance();
     sql::Connection *connection = instance.getConnection();
     Database::txBegin(connection);
     for (std::vector<SqlCell> &item: eList) {
-        save(item);
+        status = save(item);
     }
     Database::txCommit(connection);
+    Database::getInstance().releaseConnection(connection);
+    return status;
 }
 
 std::vector<SqlCell> Repository::findById(long id) {
@@ -60,6 +83,10 @@ std::vector<SqlCell> Repository::findById(long id) {
     sql::ResultSet *rs = preparedStatement->executeQuery();
     std::vector<SqlCell> result;
     while (rs->next()) mapToSqlColumn(rs, result);
+
+    delete (preparedStatement);
+    delete (rs);
+    Database::getInstance().releaseConnection(connection);
     return result;
 }
 
@@ -78,6 +105,9 @@ std::vector<std::vector<SqlCell>> Repository::find(std::string &whereClause) {
         mapToSqlColumn(rs, row);
         result.push_back(row);
     }
+    delete (preparedStatement);
+    delete (rs);
+    Database::getInstance().releaseConnection(connection);
     return result;
 }
 
@@ -95,6 +125,8 @@ std::vector<std::vector<SqlCell>> Repository::findAll() {
         mapToSqlColumn(rs, row);
         result.push_back(row);
     }
+    delete (preparedStatement);
+    delete (rs);
     return result;
 }
 
@@ -107,32 +139,55 @@ bool Repository::existsById(long id) {
     preparedStatement->setBigInt(1, std::to_string(id));
     sql::ResultSet *rs = preparedStatement->executeQuery();
     std::vector<SqlCell> result;
-    return rs->next();
+
+    delete (preparedStatement);
+    Database::getInstance().releaseConnection(connection);
+    bool exists = rs->next();
+    delete (rs);
+    return exists;
 }
 
-void Repository::removeById(long id) {
-    Database &instance = Database::getInstance();
-    sql::Connection *connection = instance.getConnection();
-    std::string query = "DELETE FROM {} WHERE id=?";
-    std::string formattedQuery = fmt::format(query, tableName);
-    sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
-    preparedStatement->setBigInt(1, std::to_string(id));
-    preparedStatement->executeUpdate();
-}
-
-void Repository::removeAll() {
-    Database &instance = Database::getInstance();
-    sql::Connection *connection = instance.getConnection();
-    std::string query = "truncate {}";
-    std::string formattedQuery = fmt::format(query, tableName);
-    sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
-    preparedStatement->executeUpdate();
-}
-
-void Repository::removeAllById(std::vector<long> &eList) {
-    for (const auto &item: eList) {
-        removeById(item);
+int Repository::removeById(long id) {
+    try {
+        Database &instance = Database::getInstance();
+        sql::Connection *connection = instance.getConnection();
+        std::string query = "DELETE FROM {} WHERE id=?";
+        std::string formattedQuery = fmt::format(query, tableName);
+        sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
+        preparedStatement->setBigInt(1, std::to_string(id));
+        int status = preparedStatement->executeUpdate();
+        delete (preparedStatement);
+        Database::getInstance().releaseConnection(connection);
+        return status;
+    } catch (std::exception &e) {
+        syslog(LOG_WARNING, "%s", e.what());
     }
+    return 0;
+}
+
+int Repository::removeAll() {
+    try {
+        Database &instance = Database::getInstance();
+        sql::Connection *connection = instance.getConnection();
+        std::string query = "truncate {}";
+        std::string formattedQuery = fmt::format(query, tableName);
+        sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
+        int status = preparedStatement->executeUpdate();
+        delete (preparedStatement);
+        Database::getInstance().releaseConnection(connection);
+        return status;
+    } catch (std::exception &e) {
+        syslog(LOG_WARNING, "%s", e.what());
+    }
+    return 2;
+}
+
+int Repository::removeAllById(std::vector<long> &eList) {
+    int status;
+    for (const auto &item: eList) {
+        status = removeById(item);
+    }
+    return status;
 }
 
 long Repository::count() {
@@ -143,7 +198,10 @@ long Repository::count() {
     sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
     sql::ResultSet *rs = preparedStatement->executeQuery();
     if (rs->next()) return rs->getInt64(1);
-    return 0;
+    delete (preparedStatement);
+    delete (rs);
+    Database::getInstance().releaseConnection(connection);
+    return 2;
 }
 
 Repository::Repository(std::string tableName) : tableName(std::move(tableName)) {
