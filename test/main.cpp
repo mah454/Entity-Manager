@@ -2,13 +2,18 @@
 #include <vector>
 #include "repository/PersonRepository.h"
 #include <syslog.h>
+#include <gtest/gtest.h>
 
-int main() {
+int main(int argc, char **argv) {
 
-    openlog("entity-manager",LOG_PID,LOG_LOCAL0);
+//    openlog("entity-manager", LOG_PID, LOG_LOCAL0);
 
-    std::cout << getenv("MYSQL_CONNECTION_URL") << std::endl;
+    ::testing::InitGoogleTest(&argc, argv);
 
+    return RUN_ALL_TESTS();
+
+
+/*
     auto *configuration = new Configuration();
     configuration->setConnectionUrl("tcp://172.17.0.2:3306/sample");
     configuration->setUsername("root");
@@ -30,7 +35,7 @@ int main() {
     Database::txBegin(conn);
     int status = personRepository.save(parameters, conn);
     Database::txCommit(conn);
-
+*/
 
 //    SqlCell whereClause = {"id", "2", INT};
 //    personRepository.merge(parameters, whereClause);
@@ -62,3 +67,4 @@ int main() {
 
     return 0;
 }
+

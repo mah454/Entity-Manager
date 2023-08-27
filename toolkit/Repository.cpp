@@ -26,15 +26,14 @@ int Repository::save(std::vector<SqlCell> &params, sql::Connection *connection) 
         std::string formattedQuery = fmt::format(query, tableName, keys, values);
         sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
         parsePreparedStatement(params, preparedStatement);
-        status = preparedStatement->executeUpdate();
+        preparedStatement->executeUpdate();
         preparedStatement->close();
         delete (preparedStatement);
-        Database::getInstance().releaseConnection(connection);
-        return status;
+        return 0;
     } catch (std::exception &e) {
         syslog(LOG_WARNING, "%s", e.what());
     }
-    return 2;
+    return 1;
 }
 
 int Repository::merge(std::vector<SqlCell> &params, std::string &whereClause, sql::Connection *connection) {
@@ -53,11 +52,11 @@ int Repository::merge(std::vector<SqlCell> &params, std::string &whereClause, sq
         preparedStatement->close();
         delete (preparedStatement);
         Database::getInstance().releaseConnection(connection);
-        return status;
+        return 0;
     } catch (std::exception &e) {
         syslog(LOG_WARNING, "%s", e.what());
     }
-    return 2;
+    return 1;
 }
 
 int Repository::saveAll(std::vector<std::vector<SqlCell>> &eList) {
@@ -155,14 +154,14 @@ int Repository::removeById(long id) {
         std::string formattedQuery = fmt::format(query, tableName);
         sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
         preparedStatement->setBigInt(1, std::to_string(id));
-        int status = preparedStatement->executeUpdate();
+        preparedStatement->executeUpdate();
         delete (preparedStatement);
         Database::getInstance().releaseConnection(connection);
-        return status;
+        return 0;
     } catch (std::exception &e) {
         syslog(LOG_WARNING, "%s", e.what());
     }
-    return 0;
+    return 1;
 }
 
 int Repository::removeAll() {
@@ -172,14 +171,14 @@ int Repository::removeAll() {
         std::string query = "truncate {}";
         std::string formattedQuery = fmt::format(query, tableName);
         sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
-        int status = preparedStatement->executeUpdate();
+        preparedStatement->executeUpdate();
         delete (preparedStatement);
         Database::getInstance().releaseConnection(connection);
-        return status;
+        return 0;
     } catch (std::exception &e) {
         syslog(LOG_WARNING, "%s", e.what());
     }
-    return 2;
+    return 1;
 }
 
 int Repository::removeAllById(std::vector<long> &eList) {
@@ -197,11 +196,12 @@ long Repository::count() {
     std::string formattedQuery = fmt::format(query, tableName);
     sql::PreparedStatement *preparedStatement = connection->prepareStatement(formattedQuery);
     sql::ResultSet *rs = preparedStatement->executeQuery();
-    if (rs->next()) return rs->getInt64(1);
+    int64_t count = 0;
+    if (rs->next()) count = rs->getInt64(1);
     delete (preparedStatement);
     delete (rs);
     Database::getInstance().releaseConnection(connection);
-    return 2;
+    return count;
 }
 
 Repository::Repository(std::string tableName) : tableName(std::move(tableName)) {

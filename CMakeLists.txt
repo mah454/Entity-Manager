@@ -11,9 +11,10 @@ add_library(entity-manager
 add_executable(test
         test/main.cpp
         test/repository/PersonRepository.cpp
-        test/model/Person.cpp)
+        test/model/Person.cpp
+        test/EnittyManagerTest.cpp)
 
 target_link_libraries(entity-manager PRIVATE fmt mysqlcppconn)
-target_link_libraries(test entity-manager)
+target_link_libraries(test PRIVATE entity-manager gtest)
 
 install(TARGETS entity-manager RUNTIME DESTINATION bin)
